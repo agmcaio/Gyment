@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "848943941878",
+    "project_id": "gyment-bd49f",
+    "storage_bucket": "gyment-bd49f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848943941878:android:466621f95be515b67244d7",
+        "android_client_info": {
+          "package_name": "com.gps.gyment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeizbkJtj-AHK4RDCwSQfwZABla-T3-Zs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
