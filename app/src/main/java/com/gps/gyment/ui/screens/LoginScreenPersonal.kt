@@ -39,7 +39,7 @@ import com.gps.gyment.ui.components.Logo
 import com.gps.gyment.ui.theme.GymentTheme
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreenPersonal(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -60,7 +60,7 @@ fun LoginScreen(navController: NavController) {
                 Column (
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ){
-                    LoginForm(
+                    LoginPersonalForm(
                         email = email,
                         onEmailChange = { email = it },
                         password = password,
@@ -68,7 +68,7 @@ fun LoginScreen(navController: NavController) {
                         onLoginClick = {
                             if (email.isEmpty() || password.isEmpty()) {
                                 error = "Preencha todos os campos"
-                                return@LoginForm
+                                return@LoginPersonalForm
                             }
 
                             val auth = FirebaseAuth.getInstance()
@@ -94,16 +94,15 @@ fun LoginScreen(navController: NavController) {
                     }
                 }
 
-                GoToPersonalArea { navController.navigate("personalLogin") }
-
-                GoToRegisterButton { navController.navigate("register") }
+                GoToCustomerArea { navController.navigate("login") }
+                GoToRegisterPersonalButton { navController.navigate("register") }
             }
         }
     }
 }
 
 @Composable
-fun GoToRegisterButton(onRegister: () -> Unit) {
+fun GoToRegisterPersonalButton(onRegister: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -130,7 +129,7 @@ fun GoToRegisterButton(onRegister: () -> Unit) {
 }
 
 @Composable
-fun LoginForm(
+fun LoginPersonalForm(
     email: String,
     onEmailChange: (String) -> Unit,
     password: String,
@@ -145,7 +144,7 @@ fun LoginForm(
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Acesse sua conta de aluno",
+            text = "Acesse sua conta de personal",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -187,7 +186,7 @@ fun LoginForm(
 
         Button(
             onClick = onLoginClick,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
@@ -200,7 +199,7 @@ fun LoginForm(
 }
 
 @Composable
-fun GoToPersonalArea(onChangeToPersonal : () -> Unit) {
+fun GoToCustomerArea(onChangeToPersonal : () -> Unit) {
     Button(
         onClick = onChangeToPersonal,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
@@ -208,7 +207,7 @@ fun GoToPersonalArea(onChangeToPersonal : () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Você é personal? Clique aqui!",
+            text = "Você é aluno? Clique aqui!",
             color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold
