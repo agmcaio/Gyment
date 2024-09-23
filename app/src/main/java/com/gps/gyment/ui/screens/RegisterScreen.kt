@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -48,6 +50,12 @@ fun RegisterScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
+    var isLoading by remember { mutableStateOf(false) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -64,61 +72,82 @@ fun RegisterScreen(navController: NavController) {
             Form(
                 name = name,
                 onNameChange = { name = it },
+                nameError = nameError,
                 email = email,
                 onEmailChange = { email = it },
+                emailError = emailError,
                 password = password,
                 onPasswordChange = { password = it },
+                passwordError = passwordError,
                 confirmPassword = confirmPassword,
                 onConfirmPasswordChange = { confirmPassword = it },
+                confirmPasswordError = confirmPasswordError,
                 onRegisterClick = {
-                    if (password == confirmPassword) {
-                        registerUser(name, email, password, navController)
-                    } else {
-                        // Exibir mensagem de erro
+                    nameError = if (name.isEmpty()) "Nome não pode ser vazio" else null
+                    emailError = if (email.isEmpty()) "E-mail não pode ser vazio" else null
+                    passwordError = if (password.isEmpty()) "Senha não pode ser vazia" else null
+                    confirmPasswordError = if (confirmPassword.isEmpty()) "Confirme sua senha" else null
+
+                    if (password != confirmPassword) {
+                        confirmPasswordError = "As senhas não correspondem"
                     }
-                }
+
+                    if (nameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
+                        isLoading = true
+                        registerUser(name, email, password, navController, { isLoading = false }, { errorMessage ->
+                            emailError = errorMessage
+                            isLoading = false
+                        })
+                    }
+                },
+                isLoading = isLoading // Passa o estado de loading
             )
             BackToLoginButton{ navController.popBackStack() }
         }
     }
 }
 
-
-
-
-
-private fun registerUser(name: String, email: String, password: String, navController: NavController) {
+private fun registerUser(
+    name: String,
+    email: String,
+    password: String,
+    navController: NavController,
+    onComplete: () -> Unit,
+    onError: (String) -> Unit) {
     val auth = FirebaseAuth.getInstance()
-    auth.createUserWithEmailAndPassword(email, password)
-        .addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val user = auth.currentUser
-                if (user != null) {
-                    // Cria um documento na coleção "users" para o usuário atual
-                    val userData = hashMapOf(
-                        "name" to name,
-                        "email" to email,
-                        "createdAt" to System.currentTimeMillis()
-                    )
+    try {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                onComplete()
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    if (user != null) {
+                        val userData = hashMapOf(
+                            "name" to name,
+                            "email" to email,
+                            "createdAt" to System.currentTimeMillis()
+                        )
 
-                    FirebaseFirestore.getInstance()
-                        .collection("users")
-                        .document(user.uid) // Usa o UID do usuário como ID do documento
-                        .set(userData)
-                        .addOnSuccessListener {
-                            // Documento criado com sucesso, navegar para a próxima tela
-                            navController.navigate("app")
-                        }
-                        .addOnFailureListener { e ->
-                            // Falha ao criar o documento, lidar com o erro
-                            e.printStackTrace()
-                        }
+                        FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(user.uid)
+                            .set(userData)
+                            .addOnSuccessListener {
+                                onComplete()
+                                navController.navigate(Routes.HOME.route)
+                            }
+                            .addOnFailureListener { e ->
+                                onError("Erro ao criar usuário: ${task.exception?.message}")
+                            }
+                    }
+                } else {
+                    onError("Erro ao criar usuário: ${task.exception?.message}")
                 }
-            } else {
-                // Lidar com falha na criação do usuário
-                task.exception?.printStackTrace()
             }
-        }
+    } catch (e: Exception) {
+        onError("Erro ao criar usuário: ${e.message}")
+    }
+
 }
 
 
@@ -142,13 +171,18 @@ fun BackToLoginButton(onBackToLogin: () -> Unit) {
 fun Form(
     name: String,
     onNameChange: (String) -> Unit,
+    nameError: String?,
     email: String,
     onEmailChange: (String) -> Unit,
+    emailError: String?,
     password: String,
     onPasswordChange: (String) -> Unit,
+    passwordError: String?,
     confirmPassword: String,
     onConfirmPasswordChange: (String) -> Unit,
-    onRegisterClick: () -> Unit
+    confirmPasswordError: String?,
+    onRegisterClick: () -> Unit,
+    isLoading: Boolean
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -165,78 +199,143 @@ fun Form(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Nome") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    onNameChange(it)
+                    if (nameError != null) onNameChange(it)
+                },
+                label = { Text("Nome") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = nameError != null,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = onEmailChange,
-            label = { Text("E-mail") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Senha") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
-        )
+            if (nameError != null) {
+                Text(
+                    text = nameError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = onConfirmPasswordChange,
-            label = { Text("Confirme sua senha") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Send
-            ),
-            keyboardActions = KeyboardActions(
-                onSend = { onRegisterClick() }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = email,
+                onValueChange = {
+                    onEmailChange(it)
+                    if (emailError != null) onEmailChange(it)
+                },
+                label = { Text("E-mail") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = emailError != null,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
-        )
+            if (emailError != null) {
+                Text(
+                    text = emailError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    onPasswordChange(it)
+                    if (passwordError != null) onPasswordChange(it)
+                },
+                label = { Text("Senha") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = passwordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+            if (passwordError != null) {
+                Text(
+                    text = passwordError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = {
+                    onConfirmPasswordChange(it)
+                    if (confirmPasswordError != null) onConfirmPasswordChange(it)
+                },
+                label = { Text("Confirme sua senha") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = confirmPasswordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Send
+                ),
+                keyboardActions = KeyboardActions(
+                    onSend = { onRegisterClick() }
+                )
+            )
+            if (confirmPasswordError != null) {
+                Text(
+                    text = confirmPasswordError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = onRegisterClick,
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Criar e acessar",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text(
+                    text = "Criar e acessar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
