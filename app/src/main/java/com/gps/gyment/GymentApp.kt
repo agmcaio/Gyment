@@ -3,9 +3,11 @@ package com.gps.gyment
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.gps.gyment.ui.components.BottomNavBar
 import com.gps.gyment.ui.screens.CreateExerciseScreen
@@ -18,22 +20,27 @@ import com.gps.gyment.ui.screens.RegisterScreen
 
 
 @Composable
-fun GymentApp() {
+fun GymentApp(startRoute: String) {
     val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController = navController, items = Routes.entries) }
+        bottomBar = {
+            if (currentRoute != "login" && currentRoute != "register") {
+                BottomNavBar(navController = navController, items = Routes.entries)
+            }
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.HOME.route,
+            startDestination = startRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(route = Routes.HOME.route) { HomeScreen(navController) }
-            composable(route = Routes.HISTORY.route) { HistoryScreen(navController) }
-            composable(route = Routes.PROFILE.route) { ProfileScreen(navController) }
-            composable(route = "create_exercise") { CreateExerciseScreen(navController) }
-
+            composable(Routes.HOME.route) { HomeScreen(navController) }
+            composable(Routes.HISTORY.route) { HistoryScreen(navController) }
+            composable(Routes.PROFILE.route) { ProfileScreen(navController) }
+            composable("create_exercise") { CreateExerciseScreen(navController) }
             composable("login") { LoginScreen(navController) }
             composable("register") { RegisterScreen(navController) }
             composable("exercise_detail/{exerciseId}") { backStackEntry ->

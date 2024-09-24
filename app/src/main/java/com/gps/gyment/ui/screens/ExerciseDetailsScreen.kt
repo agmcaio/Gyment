@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +46,9 @@ import com.gps.gyment.R
 
 import com.gps.gyment.data.enums.getMuscleByName
 import com.gps.gyment.data.models.Exercise
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,9 +78,9 @@ fun ExerciseDetailScreen(
                         repetitions = document.getString("repetitions") ?: "",
                         sets = document.getString("sets") ?: "",
                         muscleGroup = document.getString("muscle_group") ?: "",
-                        createdAt = document.getLong("created_at") ?: 0L,
+                        createdAt = document.getString("created_at") ?: "", // Obtém o Timestamp e converte para Long
                         done = document.getBoolean("done") ?: false,
-                        doneAt = document.getLong("done_at") ?: 0L
+                        doneAt = document.getString("done_at") ?: ""
                     )
                     isDone = exercise?.done ?: false
                 }
@@ -91,26 +92,40 @@ fun ExerciseDetailScreen(
 
     // Function to mark exercise as done
     fun markAsDone() {
-        currentUser?.let {
-            db.collection("users")
-                .document(it.uid)
-                .collection("exercises")
-                .document(exerciseId)
-                .update(
-                    mapOf(
-                        "done" to true,
-                        "done_at" to System.currentTimeMillis()
-                    )
-                )
-                .addOnSuccessListener {
-                    Toast.makeText(context, "Exercicio feito!", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
-                    isDone = true
-                }
-                .addOnFailureListener { e ->
-                    e.printStackTrace()
-                }
+        currentUser?.let { user ->
+                db.collection("users")
+                    .document(user.uid)
+                    .collection("exercises")
+                    .document(exerciseId)
+                    .get()
+                    .addOnSuccessListener { document ->
+                        if (document != null && document.getBoolean("done") == false) {
+                            db.collection("users")
+                                .document(user.uid)
+                                .collection("exercises")
+                                .document(exerciseId)
+                                .update(
+                                    mapOf(
+                                        "done" to true,
+                                        "done_at"  to SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(Date()), // Formata a data como string
+                                    )
+                                )
+                                .addOnSuccessListener {
+                                    Toast.makeText(context, "Exercicio feito!", Toast.LENGTH_SHORT).show()
+                                    navController.popBackStack()
+                                    isDone = true
+                                }
+                                .addOnFailureListener { e ->
+                                    e.printStackTrace()
+                                }
+                        } else {
+                            // Se já estiver marcado como feito, só exibe uma mensagem ou ignora
+                            Toast.makeText(context, "Este exercício já foi concluído.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
         }
+
     }
 
     Scaffold(

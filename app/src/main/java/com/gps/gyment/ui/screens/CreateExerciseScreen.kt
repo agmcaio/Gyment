@@ -33,6 +33,10 @@ import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.gps.gyment.data.enums.Muscle
+import java.sql.Timestamp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +61,8 @@ fun CreateExerciseScreen(navController: NavController) {
                 "repetitions" to repetitions,
                 "muscle_group" to selectedMuscle.name,
                 "done" to false,
-                "created_at" to System.currentTimeMillis()
+                "created_at" to SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(Date()),
+                "done_at" to null
             )
 
             FirebaseFirestore.getInstance()

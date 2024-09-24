@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import com.gps.gyment.Routes
 import com.gps.gyment.ui.components.Logo
 import com.gps.gyment.ui.theme.GymentTheme
 
@@ -76,7 +77,7 @@ fun LoginScreen(navController: NavController) {
                                 .addOnCompleteListener { task ->
                                     if (task.isSuccessful) {
                                         Log.d("AuthStatus", "Usuário autenticado:")
-                                        navController.navigate("app")
+                                        navController.navigate(Routes.HOME.route)
                                     } else{
                                         Log.d("AuthStatus", "Erro ao autenticar usuário:")
                                         error = "E-mail ou senha incorretos"
