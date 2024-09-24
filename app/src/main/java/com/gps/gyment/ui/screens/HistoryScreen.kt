@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -46,9 +47,24 @@ fun HistoryScreen(navController: NavController) {
     val db = FirebaseFirestore.getInstance()
     val currentUser = auth.currentUser
     val exercises = remember { mutableStateListOf<Exercise>() }
+    val groupedExercises = remember { mutableStateMapOf<String, List<Exercise>>() }
 
+    fun formatDateTimeToDate(dateString: String): String {
+        val inputFormat = SimpleDateFormat("dd-MM-yyyy HH:mm:ss")
+        val outputFormat = SimpleDateFormat("dd-MM-yyyy")
 
-    // Fetch exercises from Firestore
+        val date = inputFormat.parse(dateString)
+        return outputFormat.format(date)
+    }
+
+    fun formatDateTimeToTime(dateString: String): String {
+        val inputFormat = SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US)
+        val outputFormat = SimpleDateFormat("HH:mm")
+
+        val date = inputFormat.parse(dateString)
+        return outputFormat.format(date)
+    }
+
     if (currentUser != null) {
         FirebaseFirestore.getInstance()
             .collection("users")
@@ -59,44 +75,31 @@ fun HistoryScreen(navController: NavController) {
             .addOnSuccessListener { querySnapshot ->
                 exercises.clear()
                 for (document in querySnapshot) {
-                    val exercise = document.toObject(Exercise::class.java)
-                    exercise.id = document.id
+                    val exercise = Exercise(
+                        id = document.id,
+                        name = document.getString("name") ?: "",
+                        repetitions = document.getString("repetitions") ?: "",
+                        sets = document.getString("sets") ?: "",
+                        muscleGroup = document.getString("muscleGroup") ?: "",
+                        createdAt = document.getString("created_at") ?: "",
+                        done = document.getBoolean("done") ?: false,
+                        doneAt = document.getString("done_at") ?: ""
+                    )
+
+                    //exercise.id = document.id
                     exercises.add(exercise)
                 }
+
+                groupedExercises.clear()
+                groupedExercises.putAll(
+                    exercises.groupBy{ formatDateTimeToDate(it.doneAt) }
+                )
+
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
             }
     }
-
-    fun convertTimestampToDate(timestamp: Long): String {
-        // Cria um objeto Date a partir do timestamp
-        val date = Date(timestamp)
-
-        // Define o formato desejado
-        val dateFormat = SimpleDateFormat("d-MM-yyyy", Locale.getDefault())
-
-        // Retorna a data formatada como uma String
-        return dateFormat.format(date)
-    }
-
-    // Group exercises by day
-    val groupedExercises = exercises.groupBy {
-        convertTimestampToDate(it.doneAt)
-    }
-
-
-    fun convertTimestampToTime(timestamp: Long): String {
-        // Cria um objeto Date a partir do timestamp
-        val date = Date(timestamp)
-
-        // Define o formato desejado
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-        // Retorna a hora formatada como uma String
-        return timeFormat.format(date)
-    }
-
 
     Scaffold(
         topBar = {
@@ -120,11 +123,10 @@ fun HistoryScreen(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(16.dp)
         ) {
-
             groupedExercises.forEach { (date, exercises) ->
                 item {
                     Text(
-                        text = "13/08/2024",
+                        text = date,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 8.dp)
@@ -142,16 +144,13 @@ fun HistoryScreen(navController: NavController) {
                                     .padding(16.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                val formatter = DateTimeFormatter.ofPattern("HH:mm")
-                                val current = LocalDateTime.now().format(formatter)
-
                                 Text(
                                     text = exercise.name,
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = current,
+                                    text = formatDateTimeToTime(exercise.doneAt),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
