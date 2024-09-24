@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +51,7 @@ fun RegisterScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var userType by remember { mutableStateOf("aluno") }
 
     var isLoading by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf<String?>(null) }
@@ -82,6 +85,8 @@ fun RegisterScreen(navController: NavController) {
                 confirmPassword = confirmPassword,
                 onConfirmPasswordChange = { confirmPassword = it },
                 confirmPasswordError = confirmPasswordError,
+                userType = userType,
+                onUserTypeChange = { userType = it },
                 onRegisterClick = {
                     nameError = if (name.isEmpty()) "Nome não pode ser vazio" else null
                     emailError = if (email.isEmpty()) "E-mail não pode ser vazio" else null
@@ -94,13 +99,13 @@ fun RegisterScreen(navController: NavController) {
 
                     if (nameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
                         isLoading = true
-                        registerUser(name, email, password, navController, { isLoading = false }, { errorMessage ->
+                        registerUser(name, email, password, userType, navController, { isLoading = false }, { errorMessage ->
                             emailError = errorMessage
                             isLoading = false
                         })
                     }
                 },
-                isLoading = isLoading // Passa o estado de loading
+                isLoading = isLoading
             )
             BackToLoginButton{ navController.popBackStack() }
         }
@@ -111,6 +116,7 @@ private fun registerUser(
     name: String,
     email: String,
     password: String,
+    userType: String,
     navController: NavController,
     onComplete: () -> Unit,
     onError: (String) -> Unit) {
@@ -125,6 +131,7 @@ private fun registerUser(
                         val userData = hashMapOf(
                             "name" to name,
                             "email" to email,
+                            "userType" to userType,
                             "createdAt" to System.currentTimeMillis()
                         )
 
@@ -181,6 +188,8 @@ fun Form(
     confirmPassword: String,
     onConfirmPasswordChange: (String) -> Unit,
     confirmPasswordError: String?,
+    userType: String,
+    onUserTypeChange: (String) -> Unit,
     onRegisterClick: () -> Unit,
     isLoading: Boolean
 ) {
@@ -314,6 +323,26 @@ fun Form(
                     modifier = Modifier.align(Alignment.Start)
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text("Selecione o tipo de usuário")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            RadioButton(
+                selected = userType == "aluno",
+                onClick = { onUserTypeChange("aluno") }
+            )
+            Text("Aluno")
+
+            RadioButton(
+                selected = userType == "personal",
+                onClick = { onUserTypeChange("personal") }
+            )
+            Text("Personal")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
