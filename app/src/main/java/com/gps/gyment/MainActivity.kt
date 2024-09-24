@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GymentTheme {
-                val startRoute = if (FirebaseAuth.getInstance().currentUser != null) "app" else "login"
+                val startRoute = if (FirebaseAuth.getInstance().currentUser != null) Routes.HOME.route else "login"
                 GymentApp(startRoute = startRoute)
             }
         }
