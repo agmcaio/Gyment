@@ -20,7 +20,7 @@ import com.gps.gyment.ui.screens.RegisterScreen
 
 
 @Composable
-fun GymentApp() {
+fun GymentApp(startRoute: String) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -34,15 +34,13 @@ fun GymentApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.HOME.route,
+            startDestination = startRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
-            //composable(route = Routes.HOME.route) { HomeScreen(navController) }
             composable(Routes.HOME.route) { HomeScreen(navController) }
-            composable(route = Routes.HISTORY.route) { HistoryScreen(navController) }
-            composable(route = Routes.PROFILE.route) { ProfileScreen(navController) }
-            composable(route = "create_exercise") { CreateExerciseScreen(navController) }
-
+            composable(Routes.HISTORY.route) { HistoryScreen(navController) }
+            composable(Routes.PROFILE.route) { ProfileScreen(navController) }
+            composable("create_exercise") { CreateExerciseScreen(navController) }
             composable("login") { LoginScreen(navController) }
             composable("register") { RegisterScreen(navController) }
             composable("exercise_detail/{exerciseId}") { backStackEntry ->

@@ -1,5 +1,7 @@
 package com.gps.gyment.ui.screens
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +36,7 @@ import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.gps.gyment.data.enums.Muscle
+import com.gps.gyment.data.models.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +48,36 @@ fun CreateExerciseScreen(navController: NavController) {
     var sets by remember { mutableStateOf("") }
     var repetitions by remember { mutableStateOf("") }
     var selectedMuscle by remember { mutableStateOf(Muscle.CHEST) } // Default selection
+    var selectedStudentId by remember { mutableStateOf("") } // To store selected student ID
+    var students by remember { mutableStateOf<List<User>>(emptyList()) } // List of students
 
+    // Function to fetch students from Firestore
+    fun fetchStudents() {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .whereEqualTo("usertype", "aluno") // Filtrar apenas os alunos
+                .get()
+                .addOnSuccessListener { documents ->
+                    students = documents.map { document ->
+                        User(
+                            id = document.id,                  // O ID do documento
+                            name = document.getString("name") ?: "", // O nome do aluno
+                            userType = document.getString("usertype") ?: ""
+                        )
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Error fetching students", e)
+                }
+        }
+    }
+
+    // Call fetchStudents when the screen is first displayed
+    LaunchedEffect(Unit) {
+        fetchStudents()
+    }
 
     // Function to add exercise to Firestore
     fun addExercise() {
@@ -57,7 +90,8 @@ fun CreateExerciseScreen(navController: NavController) {
                 "repetitions" to repetitions,
                 "muscle_group" to selectedMuscle.name,
                 "done" to false,
-                "created_at" to System.currentTimeMillis()
+                "created_at" to System.currentTimeMillis(),
+                "student_id" to selectedStudentId // Save the selected student ID
             )
 
             FirebaseFirestore.getInstance()
@@ -71,6 +105,7 @@ fun CreateExerciseScreen(navController: NavController) {
                     name = ""
                     sets = ""
                     repetitions = ""
+                    selectedStudentId = "" // Reset student selection
                 }
                 .addOnFailureListener { e ->
                     e.printStackTrace()
@@ -155,6 +190,40 @@ fun CreateExerciseScreen(navController: NavController) {
                                 expanded = false
                             },
                             text = { Text(muscle.displayName) }
+                        )
+                    }
+                }
+            }
+
+            // Student Selection Dropdown Menu
+            var expandedStudent by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expandedStudent,
+                onExpandedChange = { expandedStudent = !expandedStudent }
+            ) {
+                OutlinedTextField(
+                    value = if (selectedStudentId.isEmpty()) "Selecione um aluno" else selectedStudentId,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStudent) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expandedStudent,
+                    onDismissRequest = { expandedStudent = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    students.forEach { student ->
+                        DropdownMenuItem(
+                            onClick = {
+                                selectedStudentId = student.id // Store the selected student's ID
+                                expandedStudent = false
+                            },
+                            text = { Text(student.name) } // Assuming 'name' is a property of User
                         )
                     }
                 }
