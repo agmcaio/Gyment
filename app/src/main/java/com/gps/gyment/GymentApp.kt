@@ -28,7 +28,7 @@ fun GymentApp(startRoute: String) {
 
     Scaffold(
         bottomBar = {
-            if (currentRoute != "login" && currentRoute != "register") {
+            if (currentRoute != "login" && currentRoute != "register" && currentRoute != "personalLogin") {
                 BottomNavBar(navController = navController, items = Routes.entries)
             }
         }
