@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.gps.gyment.data.enums.Muscle
+import com.gps.gyment.data.models.Exercise
 import com.gps.gyment.data.models.User
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,6 +22,9 @@ class ExerciseViewModel(
     var repetitions = mutableStateOf("")
     var selectedMuscle = mutableStateOf(Muscle.CHEST)
     var selectedStudentId = mutableStateOf("")
+    private val _exercises = MutableLiveData<List<Exercise>>()
+    val exercises: LiveData<List<Exercise>> = _exercises
+
 
     fun fetchStudents() {
         repository.fetchStudents(
@@ -29,11 +33,19 @@ class ExerciseViewModel(
         )
     }
 
-    fun addExercise() {
+    fun fetchExercises() {
+        repository.fetchExercises(
+            onSuccess = { _exercises.value = it },
+            onError = { e -> Log.w(TAG, "Error fetching exercises", e) }
+        )
+    }
+
+
+    fun addExercise(onSuccess: () -> Unit, onError: (Exception) -> Unit) {
         val exercise = hashMapOf<String, Any?>(
             "name" to name.value,
-            "sets" to sets.value.toIntOrNull(),
-            "repetitions" to repetitions.value.toIntOrNull(),
+            "sets" to sets.value,
+            "repetitions" to repetitions.value,
             "muscle_group" to selectedMuscle.value,
             "done" to false,
             "created_at" to SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(Date()),
@@ -46,9 +58,12 @@ class ExerciseViewModel(
                 sets.value = ""
                 repetitions.value = ""
                 selectedStudentId.value = ""
+                onSuccess()
+                fetchStudents()
+                fetchExercises()
             },
-            onError = {
-                it.printStackTrace()
+            onError = { e ->
+                onError(e)
             }
         )
     }

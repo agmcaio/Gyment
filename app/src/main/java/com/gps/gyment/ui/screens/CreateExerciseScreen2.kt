@@ -28,36 +28,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.gps.gyment.data.enums.Muscle
 import org.koin.mp.KoinPlatform
 import org.koin.androidx.compose.getViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateExerciseScreen2(
     navController: NavController,
-    //viewModel: ExerciseViewModel = hiltViewModel()
 ) {
     val exerciseRepository: ExerciseRepository = KoinPlatform.getKoin().get()
     val viewModel: ExerciseViewModel = getViewModel()
 
     val context = LocalContext.current
-    //val students by viewModel.students.observeAsState(emptyList())
 
-    // Usando a função fetchStudents, por exemplo
     LaunchedEffect(Unit) {
         exerciseRepository.fetchStudents(
             onSuccess = { students ->
-                // Processar a lista de alunos
             },
             onError = { exception ->
-                // Tratar o erro
             }
         )
     }
@@ -85,7 +76,6 @@ fun CreateExerciseScreen2(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Seus campos de entrada e botão aqui...
             OutlinedTextField(
                 value = viewModel.name.value,
                 onValueChange = {  viewModel.name.value = it },
@@ -139,35 +129,13 @@ fun CreateExerciseScreen2(
                     }
                 }
             }
-            // Outros campos...
 
             Button(
                 onClick = {
-                    // Aqui você pode usar o exerciseRepository para adicionar o exercício
-                    //val exerciseData = hashMapOf(
-                        //"name" to viewModel.name.value,
-                        // Adicione outros campos do exercício aqui
-                    //)
-
-                    val exerciseData = hashMapOf<String, Any?>(
-                        "name" to viewModel.name.value,
-                        "sets" to viewModel.sets.value,
-                        "repetitions" to viewModel.repetitions.value,
-                        "muscle_group" to viewModel.selectedMuscle.value.displayName,
-                        "done" to false,
-                        "created_at" to SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault()).format(
-                            Date()
-                        ),
-                        "done_at" to null
-                    )
-
-                    exerciseRepository.addExercise(
-                        exerciseData,
+                    viewModel.addExercise(
                         onSuccess = {
                             Toast.makeText(context, "Exercício criado com sucesso", Toast.LENGTH_SHORT).show()
-                            viewModel.name.value = ""
-                            viewModel.sets.value = ""
-                            viewModel.repetitions.value = ""
+                            navController.navigateUp()
                         },
                         onError = { exception ->
                             Toast.makeText(context, "Falha ao criar exercício", Toast.LENGTH_SHORT).show()

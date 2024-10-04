@@ -1,3 +1,5 @@
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gps.gyment.data.enums.Muscle
@@ -13,8 +15,8 @@ class HomeViewModel(
     private val _userName = MutableStateFlow("")
     val userName: StateFlow<String> = _userName
 
-    private val _exercises = MutableStateFlow<List<Exercise>>(emptyList())
-    val exercises: StateFlow<List<Exercise>> = _exercises
+    private val _fetchedExercises = MutableStateFlow<List<Exercise>>(emptyList())
+    val fetchedExercises: StateFlow<List<Exercise>> = _fetchedExercises
 
     private val _filteredExercises = MutableStateFlow<List<Exercise>>(emptyList())
     val filteredExercises: StateFlow<List<Exercise>> = _filteredExercises
@@ -23,7 +25,7 @@ class HomeViewModel(
 
     init {
         fetchUserData()
-        fetchExercises()
+        fetchExercisesRealtime()
     }
 
     private fun fetchUserData() {
@@ -32,12 +34,14 @@ class HomeViewModel(
         }
     }
 
-    private fun fetchExercises() {
-        viewModelScope.launch {
-            val exercisesList = repository.fetchExercises()
-            _exercises.value = exercisesList
-            updateFilteredExercises()
-        }
+    private fun fetchExercisesRealtime() {
+        repository.fetchExercisesRealtime(
+            onSuccess = { exercises ->
+                _fetchedExercises.value = exercises
+                updateFilteredExercises()
+            },
+            onError = { e -> Log.w("HomeViewModel", "Error fetching exercises", e) }
+        )
     }
 
     fun onMuscleSelected(muscle: Muscle?) {
@@ -47,9 +51,9 @@ class HomeViewModel(
 
     private fun updateFilteredExercises() {
         _filteredExercises.value = if (selectedMuscle != null) {
-            _exercises.value.filter { it.muscleGroup == selectedMuscle!!.name }
+            _fetchedExercises.value.filter { it.muscleGroup == selectedMuscle!!.name }
         } else {
-            _exercises.value
+            _fetchedExercises.value
         }
     }
 }

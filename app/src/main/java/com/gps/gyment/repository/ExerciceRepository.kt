@@ -1,3 +1,4 @@
+import com.gps.gyment.data.enums.Muscle
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.gps.gyment.data.models.Exercise
@@ -22,6 +23,33 @@ class ExerciseRepository(private val db: FirebaseFirestore, private val auth: Fi
                         )
                     }
                     onSuccess(students)
+                }
+                .addOnFailureListener { e ->
+                    onError(e)
+                }
+        }
+    }
+
+
+    fun fetchExercises(onSuccess: (List<Exercise>) -> Unit, onError: (Exception) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val exercises = mutableListOf<Exercise>()
+            db.collection("users")
+                .document(currentUser.uid)
+                .collection("exercises")
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    for (document in querySnapshot.documents) {
+                        val exercise = document.toObject(Exercise::class.java)
+                        exercise?.let {
+                            it.id = document.id
+                            if (!it.done) {
+                                exercises.add(it)
+                            }
+                        }
+                    }
+                    onSuccess(exercises)
                 }
                 .addOnFailureListener { e ->
                     onError(e)
@@ -61,7 +89,7 @@ class ExerciseRepository(private val db: FirebaseFirestore, private val auth: Fi
                             done = document.getBoolean("done") ?: false,
                             doneAt = document.getString("done_at") ?: ""
                         )
-                        onSuccess(exercise)  // Passa o objeto Exercise recuperado
+                        onSuccess(exercise)
                     }
                 }
                 .addOnFailureListener { onError(it) }

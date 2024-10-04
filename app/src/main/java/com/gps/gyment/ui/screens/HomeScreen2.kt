@@ -25,8 +25,8 @@ import org.koin.androidx.compose.getViewModel
 fun HomeScreen2(navController: NavController) {
     val viewModel: HomeViewModel = getViewModel()
     val userName by viewModel.userName.collectAsState()
-    val exercises by viewModel.exercises.collectAsState()
     val filteredExercises by viewModel.filteredExercises.collectAsState()
+
 
     Scaffold(
         floatingActionButton = {
