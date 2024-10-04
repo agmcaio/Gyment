@@ -5,20 +5,25 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,28 +45,30 @@ import com.gps.gyment.Routes
 import com.gps.gyment.ui.components.Logo
 import com.gps.gyment.ui.theme.GymentTheme
 import com.google.firebase.firestore.FirebaseFirestore
-import okhttp3.OkHttpClient
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-
 
 @Composable
 fun RegisterScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var userType by remember { mutableStateOf("aluno") }
     var cep by remember { mutableStateOf("") }
     var neighborhood by remember { mutableStateOf("") }
     var street by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var nameError by remember { mutableStateOf<String?>(null) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
-// Efeito para buscar dados ao mudar o CEP
+    // Efeito para buscar dados ao mudar o CEP
     LaunchedEffect(cep) {
         if (cep.length == 8) { // Verifica se o CEP possui 8 dígitos
             fetchAddressByCep(cep, onSuccess = { address ->
@@ -88,73 +95,103 @@ fun RegisterScreen(navController: NavController) {
             Form(
                 name = name,
                 onNameChange = { name = it },
+                nameError = nameError,
                 email = email,
                 cep = cep,
                 city = city,
                 street = street,
                 neighborhood = neighborhood,
                 onEmailChange = { email = it },
+                emailError = emailError,
                 password = password,
                 onPasswordChange = { password = it },
+                passwordError = passwordError,
                 confirmPassword = confirmPassword,
                 onConfirmPasswordChange = { confirmPassword = it },
+                confirmPasswordError = confirmPasswordError,
+                userType = userType,
                 onStreetChange = {street = it},
                 onCityChange = {city =it},
                 onCepChange = {cep = it},
                 onNeighborhood = {neighborhood = it},
+                onUserTypeChange = { userType = it },
                 onRegisterClick = {
-                    if (password == confirmPassword) {
-                        registerUser(name, email,neighborhood,city,street,cep,password, navController)
-                    } else {
-                        // Exibir mensagem de erro
+                    nameError = if (name.isEmpty()) "Nome não pode ser vazio" else null
+                    emailError = if (email.isEmpty()) "E-mail não pode ser vazio" else null
+                    passwordError = if (password.isEmpty()) "Senha não pode ser vazia" else null
+                    confirmPasswordError = if (confirmPassword.isEmpty()) "Confirme sua senha" else null
+
+                    if (password != confirmPassword) {
+                        confirmPasswordError = "As senhas não correspondem"
                     }
-                }
+
+                    if (nameError == null && emailError == null && passwordError == null && confirmPasswordError == null) {
+                        isLoading = true
+                        registerUser(name, email, password, userType, navController, { isLoading = false }, { errorMessage ->
+                            emailError = errorMessage
+                            isLoading = false
+                        },neighborhood,city,street,cep)
+                    }
+                },
+                isLoading = isLoading
             )
             BackToLoginButton{ navController.popBackStack() }
         }
     }
 }
 
-
-
-
-
-private fun registerUser(name: String, email: String, bairro:String, cidade:String, rua:String,cep:String, password: String, navController: NavController) {
+private fun registerUser(
+    name: String,
+    email: String,
+    password: String,
+    userType: String,
+    navController: NavController,
+    onComplete: () -> Unit,
+    onError: (String) -> Unit,
+    bairro:String,
+    cidade:String,
+    rua:String,
+    cep:String
+) {
     val auth = FirebaseAuth.getInstance()
-    auth.createUserWithEmailAndPassword(email, password)
-        .addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                val user = auth.currentUser
-                if (user != null) {
-                    // Cria um documento na coleção "users" para o usuário atual
-                    val userData = hashMapOf(
-                        "name" to name,
-                        "email" to email,
-                        "bairro" to bairro,
-                        "cidade" to cidade,
-                        "rua" to rua,
-                        "cep" to cep,
-                        "createdAt" to System.currentTimeMillis()
-                    )
+    try {
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                onComplete()
+                if (task.isSuccessful) {
+                    val user = auth.currentUser
+                    if (user != null) {
+                        val userData = hashMapOf(
+                            "name" to name,
+                            "email" to email,
+                            "userType" to userType,
+                            "bairro" to bairro,
+                            "cidade" to cidade,
+                            "rua" to rua,
+                            "cep" to cep,
+                            "createdAt" to System.currentTimeMillis()
+                        )
 
-                    FirebaseFirestore.getInstance()
-                        .collection("users")
-                        .document(user.uid) // Usa o UID do usuário como ID do documento
-                        .set(userData)
-                        .addOnSuccessListener {
-                            // Documento criado com sucesso, navegar para a próxima tela
-                            navController.navigate("app")
-                        }
-                        .addOnFailureListener { e ->
-                            // Falha ao criar o documento, lidar com o erro
-                            e.printStackTrace()
-                        }
+                        FirebaseFirestore.getInstance()
+                            .collection("users")
+                            .document(user.uid)
+                            .set(userData)
+                            .addOnSuccessListener {
+                                onComplete()
+                                navController.navigate(Routes.HOME.route)
+                            }
+                            .addOnFailureListener { e ->
+                                onError("Erro ao criar usuário: ${task.exception?.message}")
+                            }
+                    }
+                } else {
+                    onError("Erro ao criar usuário: ${task.exception?.message}")
                 }
-            } else {
-                // Lidar com falha na criação do usuário
-                task.exception?.printStackTrace()
             }
-        }
+    } catch (e: Exception) {
+        onError("Erro ao criar usuário: ${e.message}")
+    }
+
 }
 
 
@@ -178,21 +215,28 @@ fun BackToLoginButton(onBackToLogin: () -> Unit) {
 fun Form(
     name: String,
     onNameChange: (String) -> Unit,
+    nameError: String?,
     email: String,
-    cep : String,
-    onCepChange : (String)->Unit,
-    onNeighborhood : (String) -> Unit,
-    onCityChange : (String)->Unit,
-    onStreetChange : (String)->Unit,
+    cep:String,
     neighborhood : String,
     street : String,
     city:String,
     onEmailChange: (String) -> Unit,
+    emailError: String?,
     password: String,
     onPasswordChange: (String) -> Unit,
+    passwordError: String?,
     confirmPassword: String,
     onConfirmPasswordChange: (String) -> Unit,
-    onRegisterClick: () -> Unit
+    confirmPasswordError: String?,
+    userType: String,
+    onUserTypeChange: (String) -> Unit,
+    onRegisterClick: () -> Unit,
+    onCepChange : (String)->Unit,
+    onNeighborhood : (String) -> Unit,
+    onCityChange : (String)->Unit,
+    onStreetChange : (String)->Unit,
+    isLoading: Boolean
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -209,145 +253,233 @@ fun Form(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Nome") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = {
+                    onNameChange(it)
+                    if (nameError != null) onNameChange(it)
+                },
+                label = { Text("Nome") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = nameError != null,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = onEmailChange,
-            label = { Text("E-mail") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = cep,
-            onValueChange = onCepChange,
-            label = { Text("CEP") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
-            )
-        )
+            if (nameError != null) {
+                Text(
+                    text = nameError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = neighborhood,
-            onValueChange = onNeighborhood,
-            label = { Text("Bairro") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = email,
+                onValueChange = {
+                    onEmailChange(it)
+                    if (emailError != null) onEmailChange(it)
+                },
+                label = { Text("E-mail") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = emailError != null,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
-        )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = cep,
+                onValueChange = onCepChange,
+                label = { Text("CEP") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = neighborhood,
+                onValueChange = onNeighborhood,
+                label = { Text("Bairro") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = street,
+                onValueChange = onStreetChange,
+                label = { Text("Rua") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = city,
+                onValueChange = onCityChange,
+                label = { Text("Cidade") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            if (emailError != null) {
+                Text(
+                    text = emailError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = street,
-            onValueChange = onStreetChange,
-            label = { Text("Rua") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    onPasswordChange(it)
+                    if (passwordError != null) onPasswordChange(it)
+                },
+                label = { Text("Senha") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = passwordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
-        )
+            if (passwordError != null) {
+                Text(
+                    text = passwordError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = city,
-            onValueChange = onCityChange,
-            label = { Text("Cidade") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = {
+                    onConfirmPasswordChange(it)
+                    if (confirmPasswordError != null) onConfirmPasswordChange(it)
+                },
+                label = { Text("Confirme sua senha") },
+                modifier = Modifier.fillMaxWidth(),
+                isError = confirmPasswordError != null,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Send
+                ),
+                keyboardActions = KeyboardActions(
+                    onSend = { onRegisterClick() }
+                )
             )
-        )
+            if (confirmPasswordError != null) {
+                Text(
+                    text = confirmPasswordError,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
-            label = { Text("Senha") },
+        Text("Selecione o tipo de usuário")
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Next
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            RadioButton(
+                selected = userType == "aluno",
+                onClick = { onUserTypeChange("aluno") }
             )
-        )
+            Text("Aluno")
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = onConfirmPasswordChange,
-            label = { Text("Confirme sua senha") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Send
-            ),
-            keyboardActions = KeyboardActions(
-                onSend = { onRegisterClick() }
+            RadioButton(
+                selected = userType == "personal",
+                onClick = { onUserTypeChange("personal") }
             )
-        )
+            Text("Personal")
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = onRegisterClick,
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Criar e acessar",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                Text(
+                    text = "Criar e acessar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
+
+
 private suspend fun fetchAddressByCep(cep: String, onSuccess: (Address) -> Unit) {
     // Mova a chamada de rede para a thread IO
     withContext(Dispatchers.IO) {
