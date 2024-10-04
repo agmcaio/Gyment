@@ -19,7 +19,11 @@ class UserRepository {
                 if (document.exists()) {
                     val name = document.getString("name") ?: "Usuário"
                     val email = currentUser.email ?: ""
-                    Result.success(UserProfile(name, email))
+                    val city = document.getString("cidade") ?: "Não informado"
+                    val neighborhood = document.getString("bairro") ?: "Não informado"
+                    val street = document.getString("rua") ?: "Não informado"
+                    val cep = document.getString("cep") ?: "Não informado"
+                    Result.success(UserProfile(name, email,city,cep,neighborhood,street))
                 } else {
                     Result.failure(Exception("Usuário não encontrado"))
                 }
@@ -31,7 +35,7 @@ class UserRepository {
         }
     }
 
-    suspend fun registerUser(name: String, email: String, password: String, userType: String): Result<String> {
+    suspend fun registerUser(name: String, email: String, password: String, userType: String,cep:String,cidade:String,bairro:String,rua:String): Result<String> {
         return try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val user = authResult.user
@@ -40,6 +44,10 @@ class UserRepository {
                     "name" to name,
                     "email" to email,
                     "userType" to userType,
+                    "bairro" to bairro,
+                    "cidade" to cidade,
+                    "cep" to cep,
+                    "rua" to rua,
                     "createdAt" to System.currentTimeMillis()
                 )
 
@@ -58,5 +66,9 @@ class UserRepository {
 
 data class UserProfile(
     val name: String,
-    val email: String
+    val email: String,
+    val cidade :String,
+    val cep : String,
+    val bairro : String,
+    val rua : String
 )

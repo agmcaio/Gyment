@@ -70,6 +70,9 @@ dependencies {
     implementation("io.insert-koin:koin-android:3.4.0")
     implementation("io.insert-koin:koin-androidx-compose:3.4.0")
 
+    //corrotinas
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0")
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.firebase.common.ktx)

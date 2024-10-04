@@ -23,7 +23,7 @@ import com.gps.gyment.ui.screens.HomeScreen
 import com.gps.gyment.ui.screens.LoginScreen
 import com.gps.gyment.ui.screens.LoginScreenPersonal
 import com.gps.gyment.ui.screens.ProfileScreen
-import com.gps.gyment.ui.screens.RegisterScreen
+import com.gps.gyment.ui.screens.RegisterScreen2
 
 
 @Composable
@@ -55,7 +55,7 @@ fun GymentApp(startRoute: String) {
             //composable("login") { LoginScreen(navController) }
             composable("login") { LoginScreen2(navController) }
             composable("personalLogin") { LoginScreenPersonal(navController) }
-            composable("register") { RegisterScreen(navController) }
+            composable("register") { RegisterScreen2(navController) }
             //composable("exercise_detail/{exerciseId}") { backStackEntry ->
                 //val exerciseId = backStackEntry.arguments?.getString("exerciseId")
                 //ExerciseDetailScreen(exerciseId = exerciseId ?: "", navController = navController)

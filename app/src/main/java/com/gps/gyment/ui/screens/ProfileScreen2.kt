@@ -68,6 +68,38 @@ fun ProfileScreen2(
                     label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                OutlinedTextField(
+                    value = userProfile!!.cep,
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("CEP") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = userProfile!!.rua,
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("Rua") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = userProfile!!.bairro,
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("Bairro") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = userProfile!!.cidade,
+                    readOnly = true,
+                    onValueChange = {},
+                    label = { Text("Cidade") },
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else if (errorMessage != null) {
                 Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error)
             }
