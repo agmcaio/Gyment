@@ -15,7 +15,6 @@ class ExerciseViewModel(
 ) : ViewModel() {
 
     private val _students = MutableLiveData<List<User>>()
-    val students: LiveData<List<User>> get() = _students
 
     var name = mutableStateOf("")
     var sets = mutableStateOf("")
