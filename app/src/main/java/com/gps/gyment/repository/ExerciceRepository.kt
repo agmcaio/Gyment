@@ -94,6 +94,32 @@ class ExerciseRepository(private val db: FirebaseFirestore, private val auth: Fi
                             .addOnFailureListener(onError)
                     }
                 }
+            }
+    }
+
+    fun deleteExercise(exerciseId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            db.collection("users")
+                .document(currentUser.uid)
+                .collection("exercises")
+                .document(exerciseId)
+                .delete()
+                .addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { onError(it) }
+        }
+    }
+
+    fun updateExercise(exerciseId: String, updatedExercise: HashMap<String, Any?>, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            db.collection("users")
+                .document(currentUser.uid)
+                .collection("exercises")
+                .document(exerciseId)
+                .update(updatedExercise)
+                .addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { onError(it) }
         }
     }
 }
