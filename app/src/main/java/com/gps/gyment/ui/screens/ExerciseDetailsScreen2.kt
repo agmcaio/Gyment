@@ -1,6 +1,11 @@
 package com.gps.gyment.ui.screens
 
 import ExerciseRepository
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,6 +32,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,8 +61,53 @@ fun ExerciseDetailScreen2(
     val context = LocalContext.current
     val exerciseRepository: ExerciseRepository = KoinPlatform.getKoin().get()
     val viewModel: ExerciseDetailViewModel = getViewModel()
-    //val viewModel: ExerciseDetailViewModel = viewModel(factory = ExerciseDetailViewModelFactory(repository))
     viewModel.fetchExercise(exerciseId)
+
+    var shakeDetector by remember { mutableStateOf(false) }
+    val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+    val shakeListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent?) {
+            event?.let {
+
+                val x = it.values[0]
+                val y = it.values[1]
+                val z = it.values[2]
+                val magnitude = Math.sqrt((x * x + y * y + z * z).toDouble())
+
+
+                if (magnitude > 12) {
+                    shakeDetector = true
+                }
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        accelerometer?.also { sensor ->
+            sensorManager.registerListener(shakeListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+
+    if (shakeDetector) {
+        viewModel.markAsDone(
+            exerciseId,
+            onSuccess = {
+                Toast.makeText(context, "Exercício feito!", Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            },
+            onError = { e ->
+                Toast.makeText(context, e.message ?: "Erro ao marcar exercício como feito.", Toast.LENGTH_SHORT).show()
+            }
+        )
+        shakeDetector = false
+    }
+
 
     Scaffold(
         topBar = {
