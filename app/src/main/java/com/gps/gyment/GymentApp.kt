@@ -1,5 +1,6 @@
 package com.gps.gyment
 
+import CreateExerciseScreen2
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -41,7 +42,8 @@ fun GymentApp(startRoute: String) {
             composable(Routes.HOME.route) { HomeScreen(navController) }
             composable(Routes.HISTORY.route) { HistoryScreen(navController) }
             composable(Routes.PROFILE.route) { ProfileScreen(navController) }
-            composable("create_exercise") { CreateExerciseScreen(navController) }
+            //composable("create_exercise") { CreateExerciseScreen(navController) }
+            composable("create_exercise") { CreateExerciseScreen2 (navController) }
             composable("login") { LoginScreen(navController) }
             composable("personalLogin") { LoginScreenPersonal(navController) }
             composable("register") { RegisterScreen(navController) }
