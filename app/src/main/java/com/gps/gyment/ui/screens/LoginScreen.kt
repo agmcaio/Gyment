@@ -1,28 +1,9 @@
-package com.gps.gyment.ui.screens
-
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -34,100 +15,65 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.google.firebase.auth.FirebaseAuth
 import com.gps.gyment.Routes
 import com.gps.gyment.ui.components.Logo
-import com.gps.gyment.ui.theme.GymentTheme
+import org.koin.androidx.compose.getViewModel
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+
+) {
+    val loginViewModel: LoginViewModel = getViewModel()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf("") }
-    GymentTheme {
-        Box(
+    val loginState by loginViewModel.loginState.collectAsState()
+
+    LaunchedEffect(loginState) {
+        if (loginState is LoginState.Success) {
+            navController.navigate(Routes.HOME.route)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(16.dp)
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceAround,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .imePadding(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceAround,
-            ) {
-                Logo()
-                Column (
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ){
-                    LoginForm(
-                        email = email,
-                        onEmailChange = { email = it },
-                        password = password,
-                        onPasswordChange = { password = it },
-                        onLoginClick = {
-                            if (email.isEmpty() || password.isEmpty()) {
-                                error = "Preencha todos os campos"
-                                return@LoginForm
-                            }
-
-                            val auth = FirebaseAuth.getInstance()
-                            auth.signInWithEmailAndPassword(email, password)
-                                .addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        Log.d("AuthStatus", "Usuário autenticado:")
-                                        navController.navigate(Routes.HOME.route)
-                                    } else{
-                                        Log.d("AuthStatus", "Erro ao autenticar usuário:")
-                                        error = "E-mail ou senha incorretos"
-                                    }
-                                }
+            Logo()
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                LoginForm(
+                    email = email,
+                    onEmailChange = { email = it },
+                    password = password,
+                    onPasswordChange = { password = it },
+                    onLoginClick = {
+                        if (email.isNotEmpty() && password.isNotEmpty()) {
+                            loginViewModel.login(email, password)
                         }
-                    )
+                    }
+                )
 
-                    if (error.isNotEmpty()) {
+                when (loginState) {
+                    is LoginState.Loading -> CircularProgressIndicator()
+                    is LoginState.Error -> {
                         Text(
-                            text = error,
+                            text = (loginState as LoginState.Error).message,
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(vertical = 16.dp)
                         )
                     }
+                    else -> Unit
                 }
-
-                GoToPersonalArea { navController.navigate("personalLogin") }
-
-                GoToRegisterButton { navController.navigate("register") }
             }
+            GoToRegisterButton { navController.navigate("register") }
         }
     }
-}
 
-@Composable
-fun GoToRegisterButton(onRegister: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = "Ainda não tem acesso?",
-            style = MaterialTheme.typography.bodySmall
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(
-            onClick = onRegister,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "Criar conta",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
 }
 
 @Composable
@@ -201,18 +147,28 @@ fun LoginForm(
 }
 
 @Composable
-fun GoToPersonalArea(onChangeToPersonal : () -> Unit) {
-    Button(
-        onClick = onChangeToPersonal,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+fun GoToRegisterButton(onRegister: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth()
     ) {
         Text(
-            text = "Você é personal? Clique aqui!",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
+            text = "Ainda não tem acesso?",
+            style = MaterialTheme.typography.bodySmall
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onRegister,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Criar conta",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
