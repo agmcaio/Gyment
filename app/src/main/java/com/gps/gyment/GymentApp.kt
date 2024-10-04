@@ -1,6 +1,7 @@
 package com.gps.gyment
 
 import CreateExerciseScreen2
+import EditExerciseScreen
 import HistoryScreen2
 import HomeScreen2
 import LoginScreen2
@@ -63,6 +64,11 @@ fun GymentApp(startRoute: String) {
             composable("exercise_detail/{exerciseId}") { backStackEntry ->
                 val exerciseId = backStackEntry.arguments?.getString("exerciseId")
                 ExerciseDetailScreen2(exerciseId = exerciseId ?: "", navController = navController)
+            }
+
+            composable("edit_exercise/{exerciseId}") { backStackEntry ->
+                val exerciseId = backStackEntry.arguments?.getString("exerciseId")
+                EditExerciseScreen(navController = navController, exerciseId = exerciseId ?: "")
             }
         }
     }
