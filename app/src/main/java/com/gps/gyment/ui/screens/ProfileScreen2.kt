@@ -16,16 +16,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.gps.gyment.R
+import org.koin.androidx.compose.getViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen2(
     navController: NavController,
-    profileViewModel: ProfileViewModel = viewModel()
 ) {
+    val profileViewModel: ProfileViewModel = getViewModel()
     val userProfile by profileViewModel.userProfile.collectAsState()
     val errorMessage by profileViewModel.errorMessage.collectAsState()
 

@@ -3,21 +3,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gps.gyment.Routes
 import com.gps.gyment.ui.components.Logo
 import com.gps.gyment.ui.screens.GoToPersonalArea
 import com.gps.gyment.ui.screens.GoToRegisterButton
 import com.gps.gyment.ui.screens.LoginForm
+import org.koin.androidx.compose.getViewModel
 
 @Composable
 fun LoginScreen2(
     navController: NavController,
-    loginViewModel: LoginViewModel = viewModel()
+
 ) {
+    val loginViewModel: LoginViewModel = getViewModel()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val loginState by loginViewModel.loginState.collectAsState()
