@@ -58,6 +58,7 @@ fun HomeScreen(navController: NavController) {
     var userName by remember { mutableStateOf("") }
     var selectedMuscle by remember { mutableStateOf<Muscle?>(null) }
     val exercises = remember { mutableStateListOf<Exercise>() }
+    val filteredExercises = remember { mutableStateListOf<Exercise>() }
 
     // Se o usuário estiver autenticado, buscar o nome do Firestore
     if (currentUser != null) {
@@ -85,11 +86,13 @@ fun HomeScreen(navController: NavController) {
                 for (document in querySnapshot) {
                     val exercise = document.toObject(Exercise::class.java)
                     exercise.id = document.id
-                    // Filtrar apenas os exercícios que não foram feitos
+                    // Adiciona apenas os exercícios que não foram feitos
                     if (!exercise.done) {
                         exercises.add(exercise)
                     }
                 }
+                // Atualiza a lista filtrada após carregar os exercícios
+                updateFilteredExercises(exercises, selectedMuscle, filteredExercises)
             }
             .addOnFailureListener { e ->
                 e.printStackTrace()
@@ -99,13 +102,12 @@ fun HomeScreen(navController: NavController) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { navController.navigate("create_exercise") }) {
-                Icon(Icons.Filled.Add, contentDescription = "Notifications")
+                Icon(Icons.Filled.Add, contentDescription = "Adicionar Exercício")
             }
         },
         topBar = {
             TopAppBar(
-                modifier = Modifier
-                    .padding(top = 32.dp),
+                modifier = Modifier.padding(top = 32.dp),
                 title = {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -139,7 +141,7 @@ fun HomeScreen(navController: NavController) {
                         modifier = Modifier.fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { /* Ação do botão de notificações */ }) {
                             Icon(
                                 imageVector = Icons.Default.Notifications,
                                 contentDescription = "Botão de notificações",
@@ -152,7 +154,8 @@ fun HomeScreen(navController: NavController) {
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             MuscleFilter(selectedMuscle) { muscle ->
-                selectedMuscle = muscle!!
+                selectedMuscle = muscle
+                updateFilteredExercises(exercises, selectedMuscle, filteredExercises)
             }
             Column(Modifier.padding(16.dp)) {
                 Row(
@@ -166,10 +169,10 @@ fun HomeScreen(navController: NavController) {
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(text = "${exercises.size}")
+                    Text(text = "${filteredExercises.size}")
                 }
 
-                exercises.forEach { exercise ->
+                filteredExercises.forEach { exercise ->
                     ExerciseCard(exercise = exercise) {
                         navController.navigate("exercise_detail/${exercise.id}")
                     }
@@ -178,4 +181,19 @@ fun HomeScreen(navController: NavController) {
             }
         }
     }
+}
+
+private fun updateFilteredExercises(
+    exercises: List<Exercise>,
+    selectedMuscle: Muscle?,
+    filteredExercises: MutableList<Exercise>
+) {
+    filteredExercises.clear()
+    filteredExercises.addAll(
+        if (selectedMuscle != null) {
+            exercises.filter { it.muscleGroup == selectedMuscle.name } // Filtra os exercícios com base no grupo muscular selecionado
+        } else {
+            exercises // Retorna todos os exercícios se nenhum músculo estiver selecionado
+        }
+    )
 }

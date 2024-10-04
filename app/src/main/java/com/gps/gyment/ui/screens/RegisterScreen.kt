@@ -52,7 +52,10 @@ fun RegisterScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var userType by remember { mutableStateOf("aluno") }
-
+    var cep by remember { mutableStateOf("") }
+    var neighborhood by remember { mutableStateOf("") }
+    var street by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var nameError by remember { mutableStateOf<String?>(null) }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -77,6 +80,10 @@ fun RegisterScreen(navController: NavController) {
                 onNameChange = { name = it },
                 nameError = nameError,
                 email = email,
+                cep = cep,
+                city = city,
+                street = street,
+                neighborhood = neighborhood,
                 onEmailChange = { email = it },
                 emailError = emailError,
                 password = password,
@@ -105,6 +112,10 @@ fun RegisterScreen(navController: NavController) {
                         })
                     }
                 },
+                onStreetChange = {street = it},
+                onCityChange = {city =it},
+                onCepChange = {cep = it},
+                onNeighborhood = {neighborhood = it},
                 isLoading = isLoading
             )
             BackToLoginButton{ navController.popBackStack() }
@@ -180,6 +191,10 @@ fun Form(
     onNameChange: (String) -> Unit,
     nameError: String?,
     email: String,
+    cep:String,
+    neighborhood : String,
+    street : String,
+    city:String,
     onEmailChange: (String) -> Unit,
     emailError: String?,
     password: String,
@@ -191,6 +206,10 @@ fun Form(
     userType: String,
     onUserTypeChange: (String) -> Unit,
     onRegisterClick: () -> Unit,
+    onCepChange : (String)->Unit,
+    onNeighborhood : (String) -> Unit,
+    onCityChange : (String)->Unit,
+    onStreetChange : (String)->Unit,
     isLoading: Boolean
 ) {
     val focusManager = LocalFocusManager.current
@@ -253,6 +272,68 @@ fun Form(
                     onNext = { focusManager.moveFocus(FocusDirection.Down) }
                 )
             )
+            OutlinedTextField(
+                value = cep,
+                onValueChange = onCepChange,
+                label = { Text("CEP") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = neighborhood,
+                onValueChange = onNeighborhood,
+                label = { Text("Bairro") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = street,
+                onValueChange = onStreetChange,
+                label = { Text("Rua") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = city,
+                onValueChange = onCityChange,
+                label = { Text("Cidade") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
+            )
+
             if (emailError != null) {
                 Text(
                     text = emailError,
