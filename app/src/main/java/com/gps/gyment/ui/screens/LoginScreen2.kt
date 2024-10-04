@@ -14,7 +14,7 @@ import com.gps.gyment.ui.screens.GoToRegisterButton
 import com.gps.gyment.ui.screens.LoginForm
 
 @Composable
-fun LoginScreen(
+fun LoginScreen2(
     navController: NavController,
     loginViewModel: LoginViewModel = viewModel()
 ) {
