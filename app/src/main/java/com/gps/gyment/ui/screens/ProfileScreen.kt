@@ -43,6 +43,21 @@ fun ProfileScreen(navController: NavController) {
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var neighborhood by remember {
+         mutableStateOf("")
+    }
+
+    var cep by remember {
+        mutableStateOf("")
+    }
+
+    var city by remember {
+        mutableStateOf("")
+    }
+
+    var street by remember {
+        mutableStateOf("")
+    }
 
 
 
@@ -50,6 +65,7 @@ fun ProfileScreen(navController: NavController) {
     LaunchedEffect(currentUser) {
         currentUser?.let {
             email = it.email ?: ""
+
         }
 
         if (currentUser != null) {
@@ -60,6 +76,10 @@ fun ProfileScreen(navController: NavController) {
                 .addOnSuccessListener { document ->
                     if (document != null && document.exists()) {
                         name = document.getString("name") ?: "Usuário"
+                        city = document.getString("cidade") ?: "Não informado"
+                        neighborhood = document.getString("bairro") ?: "Não informado"
+                        street = document.getString("rua") ?: "Não informado"
+                        cep = document.getString("cep") ?: "Não informado"
                     }
                 }
                 .addOnFailureListener { e ->
@@ -113,6 +133,42 @@ fun ProfileScreen(navController: NavController) {
                 readOnly = true,
                 onValueChange = { email = it },
                 label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Email Input
+            OutlinedTextField(
+                value = cep,
+                readOnly = true,
+                onValueChange = { email = it },
+                label = { Text("CEP") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Email Input
+            OutlinedTextField(
+                value = street,
+                readOnly = true,
+                onValueChange = { street = it },
+                label = { Text("Rua") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Email Input
+            OutlinedTextField(
+                value = neighborhood,
+                readOnly = true,
+                onValueChange = { neighborhood = it },
+                label = { Text("Bairro") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Email Input
+            OutlinedTextField(
+                value = city,
+                readOnly = true,
+                onValueChange = { city = it },
+                label = { Text("Cidade") },
                 modifier = Modifier.fillMaxWidth()
             )
 

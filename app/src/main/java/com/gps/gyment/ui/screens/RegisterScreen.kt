@@ -40,13 +40,37 @@ import com.gps.gyment.Routes
 import com.gps.gyment.ui.components.Logo
 import com.gps.gyment.ui.theme.GymentTheme
 import com.google.firebase.firestore.FirebaseFirestore
+import okhttp3.OkHttpClient
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.Request
+import org.json.JSONObject
+
 
 @Composable
 fun RegisterScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var cep by remember { mutableStateOf("") }
+    var neighborhood by remember { mutableStateOf("") }
+    var street by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+// Efeito para buscar dados ao mudar o CEP
+    LaunchedEffect(cep) {
+        if (cep.length == 8) { // Verifica se o CEP possui 8 dígitos
+            fetchAddressByCep(cep, onSuccess = { address ->
+                street = address.street ?:  ""
+                neighborhood = address.neighborhood ?:  ""
+                city = address.city ?:  ""
+            })
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -65,14 +89,22 @@ fun RegisterScreen(navController: NavController) {
                 name = name,
                 onNameChange = { name = it },
                 email = email,
+                cep = cep,
+                city = city,
+                street = street,
+                neighborhood = neighborhood,
                 onEmailChange = { email = it },
                 password = password,
                 onPasswordChange = { password = it },
                 confirmPassword = confirmPassword,
                 onConfirmPasswordChange = { confirmPassword = it },
+                onStreetChange = {street = it},
+                onCityChange = {city =it},
+                onCepChange = {cep = it},
+                onNeighborhood = {neighborhood = it},
                 onRegisterClick = {
                     if (password == confirmPassword) {
-                        registerUser(name, email, password, navController)
+                        registerUser(name, email,neighborhood,city,street,cep,password, navController)
                     } else {
                         // Exibir mensagem de erro
                     }
@@ -87,7 +119,7 @@ fun RegisterScreen(navController: NavController) {
 
 
 
-private fun registerUser(name: String, email: String, password: String, navController: NavController) {
+private fun registerUser(name: String, email: String, bairro:String, cidade:String, rua:String,cep:String, password: String, navController: NavController) {
     val auth = FirebaseAuth.getInstance()
     auth.createUserWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
@@ -98,6 +130,10 @@ private fun registerUser(name: String, email: String, password: String, navContr
                     val userData = hashMapOf(
                         "name" to name,
                         "email" to email,
+                        "bairro" to bairro,
+                        "cidade" to cidade,
+                        "rua" to rua,
+                        "cep" to cep,
                         "createdAt" to System.currentTimeMillis()
                     )
 
@@ -143,6 +179,14 @@ fun Form(
     name: String,
     onNameChange: (String) -> Unit,
     email: String,
+    cep : String,
+    onCepChange : (String)->Unit,
+    onNeighborhood : (String) -> Unit,
+    onCityChange : (String)->Unit,
+    onStreetChange : (String)->Unit,
+    neighborhood : String,
+    street : String,
+    city:String,
     onEmailChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
@@ -184,6 +228,70 @@ fun Form(
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = cep,
+            onValueChange = onCepChange,
+            label = { Text("CEP") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = neighborhood,
+            onValueChange = onNeighborhood,
+            label = { Text("Bairro") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = street,
+            onValueChange = onStreetChange,
+            label = { Text("Rua") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+            )
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = city,
+            onValueChange = onCityChange,
+            label = { Text("Cidade") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
             ),
             keyboardActions = KeyboardActions(
@@ -240,3 +348,30 @@ fun Form(
         }
     }
 }
+private suspend fun fetchAddressByCep(cep: String, onSuccess: (Address) -> Unit) {
+    // Mova a chamada de rede para a thread IO
+    withContext(Dispatchers.IO) {
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url("https://viacep.com.br/ws/$cep/json/")
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+                val jsonObject = JSONObject(responseBody)
+
+                val street = jsonObject.getString("logradouro")
+                val neighborhood = jsonObject.getString("bairro")
+                val city = jsonObject.getString("localidade")
+
+                // Retorne os dados na thread principal
+                onSuccess(Address(street, neighborhood, city))
+            } else {
+                Log.e("FetchAddress", "Erro ao buscar endereço: ${response.message}")
+            }
+        }
+    }
+}
+
+data class Address(val street: String?, val neighborhood: String?, val city: String?)
