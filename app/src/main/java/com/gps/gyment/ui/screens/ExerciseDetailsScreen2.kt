@@ -78,7 +78,7 @@ fun ExerciseDetailScreen2(
                 val magnitude = Math.sqrt((x * x + y * y + z * z).toDouble())
 
 
-                if (magnitude > 12) {
+                if (magnitude > 50) {
                     shakeDetector = true
                 }
             }
