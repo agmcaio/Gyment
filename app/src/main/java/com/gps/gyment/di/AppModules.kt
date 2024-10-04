@@ -11,6 +11,7 @@ import HistoryViewModel
 import HomeViewModel
 import LoginViewModel
 import ProfileViewModel
+import RegisterViewModel
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -35,4 +36,5 @@ val appModule = module {
     viewModel { HomeViewModel(get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { ProfileViewModel(get()) }
+    viewModel { RegisterViewModel(get()) }
 }
