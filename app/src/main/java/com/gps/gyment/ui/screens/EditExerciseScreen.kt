@@ -154,7 +154,6 @@ fun EditExerciseScreen(
                     Text("Atualizar")
                 }
             } ?: run {
-                // Caso o exercício não tenha sido carregado ainda
                 CircularProgressIndicator()
             }
         }

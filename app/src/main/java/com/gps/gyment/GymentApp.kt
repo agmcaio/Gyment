@@ -16,10 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.gps.gyment.ui.components.BottomNavBar
-import com.gps.gyment.ui.screens.CreateExerciseScreen
-import com.gps.gyment.ui.screens.ExerciseDetailScreen
 import com.gps.gyment.ui.screens.ExerciseDetailScreen2
-import com.gps.gyment.ui.screens.HistoryScreen
 import com.gps.gyment.ui.screens.HomeScreen
 import com.gps.gyment.ui.screens.LoginScreen
 import com.gps.gyment.ui.screens.LoginScreenPersonal
